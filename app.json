@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Bay Area Discounts",
+    "slug": "bayareadiscounts-ios",
+    "version": "1.0.0",
+    "platforms": ["ios"],
+    "orientation": "portrait",
+    "icon": "./assets/images/favicons/web-app-manifest-512x512.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/favicons/web-app-manifest-512x512.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.baytides.bayareadiscounts",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": ["https", "http"]
+      }
+    }
+  }
+}
