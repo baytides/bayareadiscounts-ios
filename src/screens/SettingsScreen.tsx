@@ -2,7 +2,7 @@
  * Settings Screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -13,11 +13,23 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
-import * as InAppPurchases from 'expo-in-app-purchases';
 import * as Haptics from 'expo-haptics';
 import APIService from '../services/api';
 import appConfig from '../../app.json';
 import { useTheme } from '../context/ThemeContext';
+
+// Check if expo-in-app-purchases native module is available
+// This will be false in Expo Go, simulators without StoreKit, or if the module isn't linked
+const checkIAPAvailable = (): boolean => {
+  try {
+    const { NativeModules } = require('react-native');
+    return !!NativeModules.ExpoInAppPurchases;
+  } catch {
+    return false;
+  }
+};
+
+const IAP_AVAILABLE = checkIAPAvailable();
 
 const version = appConfig.expo.version;
 
@@ -45,6 +57,7 @@ export default function SettingsScreen() {
   const [metadata, setMetadata] = useState<any>(null);
   const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
   const [iapConnected, setIapConnected] = useState(false);
+  const iapModuleRef = useRef<any>(null);
 
   const handleThemeChange = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -84,19 +97,31 @@ export default function SettingsScreen() {
 
     return () => {
       // Disconnect from the store when component unmounts
-      InAppPurchases.disconnectAsync().catch(() => {});
+      if (iapModuleRef.current) {
+        iapModuleRef.current.disconnectAsync().catch(() => {});
+      }
     };
   }, []);
 
   const initializeIAP = async () => {
+    // Skip IAP initialization if native module isn't available
+    if (!IAP_AVAILABLE) {
+      console.log('IAP native module not available - skipping initialization');
+      return;
+    }
+
     try {
+      // Dynamically require the module only when we know it's available
+      const InAppPurchases = require('expo-in-app-purchases');
+      iapModuleRef.current = InAppPurchases;
+
       await InAppPurchases.connectAsync();
       setIapConnected(true);
 
       // Set up purchase listener
-      InAppPurchases.setPurchaseListener(({ responseCode, results, errorCode }) => {
+      InAppPurchases.setPurchaseListener(({ responseCode, results, errorCode }: any) => {
         if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
-          results.forEach(async (purchase) => {
+          results.forEach(async (purchase: any) => {
             if (!purchase.acknowledged) {
               // Finish the transaction
               await InAppPurchases.finishTransactionAsync(purchase, true);
@@ -117,12 +142,12 @@ export default function SettingsScreen() {
       });
     } catch (error) {
       console.log('IAP initialization error:', error);
-      // IAP not available (simulator, unsupported device, etc.)
+      // IAP not available (Expo Go, simulator, unsupported device, etc.)
     }
   };
 
   const handleDonation = async (productId: string) => {
-    if (!iapConnected) {
+    if (!iapConnected || !iapModuleRef.current) {
       Alert.alert(
         'Not Available',
         'In-app purchases are not available on this device. You can support us by visiting our website.',
@@ -134,6 +159,8 @@ export default function SettingsScreen() {
     try {
       setPurchaseLoading(productId);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      const InAppPurchases = iapModuleRef.current;
 
       // Get the product details
       const { results } = await InAppPurchases.getProductsAsync([productId]);
