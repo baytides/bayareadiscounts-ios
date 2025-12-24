@@ -3,7 +3,9 @@
     "name": "Bay Area Discounts",
     "slug": "bayareadiscounts-ios",
     "version": "1.0.0",
-    "platforms": ["ios"],
+    "platforms": [
+      "ios"
+    ],
     "orientation": "portrait",
     "icon": "./assets/images/favicons/web-app-manifest-512x512.png",
     "userInterfaceStyle": "light",
@@ -18,8 +20,12 @@
       "bundleIdentifier": "org.baytides.bayareadiscounts",
       "buildNumber": "1.0.0",
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["https", "http"]
-      }
+        "LSApplicationQueriesSchemes": [
+          "https",
+          "http"
+        ]
+      },
+      "appleTeamId": "C5U8Z5536K"
     }
   }
 }
