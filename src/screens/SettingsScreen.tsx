@@ -11,13 +11,14 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
-  SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
 import * as InAppPurchases from 'expo-in-app-purchases';
 import * as Haptics from 'expo-haptics';
 import APIService from '../services/api';
 import appConfig from '../../app.json';
+import { useTheme } from '../context/ThemeContext';
+
 const version = appConfig.expo.version;
 
 // Format bytes into a human-readable string
@@ -39,10 +40,42 @@ const DONATION_PRODUCTS = [
 ];
 
 export default function SettingsScreen() {
+  const { colors, mode, setMode, isDark } = useTheme();
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [metadata, setMetadata] = useState<any>(null);
   const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
   const [iapConnected, setIapConnected] = useState(false);
+
+  const handleThemeChange = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      'Appearance',
+      'Choose your preferred theme',
+      [
+        {
+          text: 'Light',
+          onPress: () => setMode('light'),
+        },
+        {
+          text: 'Dark',
+          onPress: () => setMode('dark'),
+        },
+        {
+          text: 'System',
+          onPress: () => setMode('system'),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const getThemeModeLabel = () => {
+    switch (mode) {
+      case 'light': return 'Light';
+      case 'dark': return 'Dark';
+      case 'system': return 'System';
+    }
+  };
 
   useEffect(() => {
     loadMetadata();
@@ -238,31 +271,49 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleThemeChange}
+              accessibilityLabel="Change theme"
+              accessibilityRole="button"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>{isDark ? '🌙' : '☀️'}</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Theme</Text>
+              </View>
+              <Text style={[styles.value, { color: colors.textSecondary }]}>{getThemeModeLabel()}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>About</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <View style={styles.row}>
-              <Text style={styles.label}>App Version</Text>
-              <Text style={styles.value}>{version}</Text>
+              <Text style={[styles.label, { color: colors.text }]}>App Version</Text>
+              <Text style={[styles.value, { color: colors.textSecondary }]}>{version}</Text>
             </View>
             {metadata && (
               <>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 <View style={styles.row}>
-                  <Text style={styles.label}>API Version</Text>
-                  <Text style={styles.value}>{metadata.version}</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>API Version</Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>{metadata.version}</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 <View style={styles.row}>
-                  <Text style={styles.label}>Total Programs</Text>
-                  <Text style={styles.value}>{metadata.totalPrograms}</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>Total Programs</Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>{metadata.totalPrograms}</Text>
                 </View>
-                <View style={styles.divider} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 <View style={styles.row}>
-                  <Text style={styles.label}>Last Updated</Text>
-                  <Text style={styles.value}>
+                  <Text style={[styles.label, { color: colors.text }]}>Last Updated</Text>
+                  <Text style={[styles.value, { color: colors.textSecondary }]}>
                     {new Date(metadata.generatedAt).toLocaleDateString()}
                   </Text>
                 </View>
@@ -272,25 +323,25 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Storage</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Storage</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <View style={styles.row}>
-              <Text style={styles.label}>Cache Size</Text>
-              <Text style={styles.value}>{cacheSize}</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Cache Size</Text>
+              <Text style={[styles.value, { color: colors.textSecondary }]}>{cacheSize}</Text>
             </View>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <TouchableOpacity
               style={styles.rowButton}
               onPress={handleClearCache}
             >
-              <Text style={styles.buttonTextDanger}>Clear Cache</Text>
+              <Text style={[styles.buttonTextDanger, { color: colors.danger }]}>Clear Cache</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Feedback</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Feedback</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <TouchableOpacity
               style={styles.rowButton}
               onPress={handleSendFeedback}
@@ -299,11 +350,11 @@ export default function SettingsScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.buttonIcon}>💬</Text>
-                <Text style={styles.buttonText}>Send Feedback</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Send Feedback</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
             </TouchableOpacity>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <TouchableOpacity
               style={styles.rowButton}
               onPress={handleReportIssue}
@@ -312,19 +363,19 @@ export default function SettingsScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.buttonIcon}>🐛</Text>
-                <Text style={styles.buttonText}>Report an Issue</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Report an Issue</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support Our Work</Text>
-          <View style={styles.card}>
-            <View style={styles.donationHeader}>
-              <Text style={styles.donationTitle}>💚 Help Keep This App Free</Text>
-              <Text style={styles.donationDescription}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support Our Work</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <View style={[styles.donationHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.donationTitle, { color: colors.text }]}>💚 Help Keep This App Free</Text>
+              <Text style={[styles.donationDescription, { color: colors.textSecondary }]}>
                 Bay Area Discounts is a volunteer-run project. Your donation helps us maintain the app and add new programs.
               </Text>
             </View>
@@ -334,6 +385,7 @@ export default function SettingsScreen() {
                   key={product.id}
                   style={[
                     styles.donationButton,
+                    { backgroundColor: colors.success },
                     purchaseLoading === product.id && styles.donationButtonLoading,
                   ]}
                   onPress={() => handleDonation(product.id)}
@@ -356,8 +408,8 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Links</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Links</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <TouchableOpacity
               style={styles.rowButton}
               onPress={handleOpenWebsite}
@@ -366,11 +418,11 @@ export default function SettingsScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.buttonIcon}>🌐</Text>
-                <Text style={styles.buttonText}>Visit Website</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Visit Website</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
             </TouchableOpacity>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <TouchableOpacity
               style={styles.rowButton}
               onPress={handleOpenBayTides}
@@ -379,23 +431,23 @@ export default function SettingsScreen() {
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.buttonIcon}>🌊</Text>
-                <Text style={styles.buttonText}>Bay Tides (Parent Org)</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Bay Tides (Parent Org)</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: colors.text }]}>
             Bay Area Discounts - a Bay Tides project
           </Text>
-          <Text style={styles.footerSubtext}>
+          <Text style={[styles.footerSubtext, { color: colors.textSecondary }]}>
             Connecting residents to public benefits and community resources
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
