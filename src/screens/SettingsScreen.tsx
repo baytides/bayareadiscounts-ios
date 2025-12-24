@@ -12,9 +12,13 @@ import {
   Alert,
   Linking,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
+import * as InAppPurchases from 'expo-in-app-purchases';
+import * as Haptics from 'expo-haptics';
 import APIService from '../services/api';
-import { version } from '../../app.json';
+import appConfig from '../../app.json';
+const version = appConfig.expo.version;
 
 // Format bytes into a human-readable string
 const formatBytes = (bytes: number, decimals = 2) => {
@@ -26,14 +30,94 @@ const formatBytes = (bytes: number, decimals = 2) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+// Donation product IDs (must match App Store Connect configuration)
+const DONATION_PRODUCTS = [
+  { id: 'org.baytides.bayareadiscounts.donation_1', amount: '$1', label: 'Small Coffee' },
+  { id: 'org.baytides.bayareadiscounts.donation_5', amount: '$5', label: 'Nice Coffee' },
+  { id: 'org.baytides.bayareadiscounts.donation_10', amount: '$10', label: 'Lunch' },
+  { id: 'org.baytides.bayareadiscounts.donation_25', amount: '$25', label: 'Big Support' },
+];
+
 export default function SettingsScreen() {
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [metadata, setMetadata] = useState<any>(null);
+  const [purchaseLoading, setPurchaseLoading] = useState<string | null>(null);
+  const [iapConnected, setIapConnected] = useState(false);
 
   useEffect(() => {
     loadMetadata();
     calculateCacheSize();
+    initializeIAP();
+
+    return () => {
+      // Disconnect from the store when component unmounts
+      InAppPurchases.disconnectAsync().catch(() => {});
+    };
   }, []);
+
+  const initializeIAP = async () => {
+    try {
+      await InAppPurchases.connectAsync();
+      setIapConnected(true);
+
+      // Set up purchase listener
+      InAppPurchases.setPurchaseListener(({ responseCode, results, errorCode }) => {
+        if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
+          results.forEach(async (purchase) => {
+            if (!purchase.acknowledged) {
+              // Finish the transaction
+              await InAppPurchases.finishTransactionAsync(purchase, true);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert(
+                'Thank You! 💚',
+                'Your donation helps us keep Bay Area Discounts free and updated for everyone. We truly appreciate your support!',
+                [{ text: 'OK' }]
+              );
+            }
+          });
+        } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
+          // User cancelled, no action needed
+        } else {
+          console.error('Purchase error:', errorCode);
+        }
+        setPurchaseLoading(null);
+      });
+    } catch (error) {
+      console.log('IAP initialization error:', error);
+      // IAP not available (simulator, unsupported device, etc.)
+    }
+  };
+
+  const handleDonation = async (productId: string) => {
+    if (!iapConnected) {
+      Alert.alert(
+        'Not Available',
+        'In-app purchases are not available on this device. You can support us by visiting our website.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    try {
+      setPurchaseLoading(productId);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      // Get the product details
+      const { results } = await InAppPurchases.getProductsAsync([productId]);
+
+      if (results && results.length > 0) {
+        // Initiate purchase
+        await InAppPurchases.purchaseItemAsync(productId);
+      } else {
+        Alert.alert('Error', 'Product not found. Please try again later.');
+        setPurchaseLoading(null);
+      }
+    } catch (error) {
+      console.error('Donation error:', error);
+      Alert.alert('Error', 'Failed to process donation. Please try again.');
+      setPurchaseLoading(null);
+    }
+  };
 
   const loadMetadata = async () => {
     try {
@@ -236,7 +320,43 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
+          <Text style={styles.sectionTitle}>Support Our Work</Text>
+          <View style={styles.card}>
+            <View style={styles.donationHeader}>
+              <Text style={styles.donationTitle}>💚 Help Keep This App Free</Text>
+              <Text style={styles.donationDescription}>
+                Bay Area Discounts is a volunteer-run project. Your donation helps us maintain the app and add new programs.
+              </Text>
+            </View>
+            <View style={styles.donationButtons}>
+              {DONATION_PRODUCTS.map((product) => (
+                <TouchableOpacity
+                  key={product.id}
+                  style={[
+                    styles.donationButton,
+                    purchaseLoading === product.id && styles.donationButtonLoading,
+                  ]}
+                  onPress={() => handleDonation(product.id)}
+                  disabled={purchaseLoading !== null}
+                  accessibilityLabel={`Donate ${product.amount}`}
+                  accessibilityRole="button"
+                >
+                  {purchaseLoading === product.id ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <Text style={styles.donationAmount}>{product.amount}</Text>
+                      <Text style={styles.donationLabel}>{product.label}</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Links</Text>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.rowButton}
@@ -363,5 +483,57 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9ca3af',
     textAlign: 'center',
+  },
+  // Donation styles
+  donationHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  donationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  donationDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  donationButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 12,
+    gap: 8,
+    justifyContent: 'center',
+  },
+  donationButton: {
+    backgroundColor: '#10b981',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    minWidth: 80,
+    alignItems: 'center',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  donationButtonLoading: {
+    opacity: 0.7,
+  },
+  donationAmount: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  donationLabel: {
+    fontSize: 11,
+    color: '#d1fae5',
+    marginTop: 2,
   },
 });
