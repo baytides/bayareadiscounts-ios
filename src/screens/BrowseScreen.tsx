@@ -18,12 +18,14 @@ import APIService from '../services/api';
 import ProgramCard from '../components/ProgramCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import { useTheme } from '../context/ThemeContext';
 
 type BrowseScreenProps = {
   navigation: NativeStackNavigationProp<BrowseStackParamList, 'BrowseList'>;
 };
 
 export default function BrowseScreen({ navigation }: BrowseScreenProps) {
+  const { colors } = useTheme();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -89,17 +91,17 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
 
 
   const renderCategoryFilter = () => (
-    <View style={styles.filterContainer}>
+    <View style={[styles.filterContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterScroll}
       >
         <TouchableOpacity
-          style={[styles.filterChip, !selectedCategory && styles.filterChipActive]}
+          style={[styles.filterChip, { backgroundColor: colors.inputBackground }, !selectedCategory && styles.filterChipActive]}
           onPress={() => setSelectedCategory(null)}
         >
-          <Text style={[styles.filterText, !selectedCategory && styles.filterTextActive]}>
+          <Text style={[styles.filterText, { color: colors.text }, !selectedCategory && styles.filterTextActive]}>
             All
           </Text>
         </TouchableOpacity>
@@ -109,6 +111,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
             key={category.id}
             style={[
               styles.filterChip,
+              { backgroundColor: colors.inputBackground },
               selectedCategory === category.id && styles.filterChipActive,
             ]}
             onPress={() => setSelectedCategory(category.id)}
@@ -117,6 +120,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
             <Text
               style={[
                 styles.filterText,
+                { color: colors.text },
                 selectedCategory === category.id && styles.filterTextActive,
               ]}
             >
@@ -137,7 +141,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {renderCategoryFilter()}
 
       <FlatList
@@ -156,7 +160,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
         onRefresh={loadData}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No programs found</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No programs found</Text>
           </View>
         }
       />
