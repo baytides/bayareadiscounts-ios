@@ -2,7 +2,7 @@
  * Browse Screen - Main program listing
  */
 
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   FlatList,
@@ -12,6 +12,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BrowseStackParamList } from '../navigation/AppNavigator';
@@ -79,6 +80,31 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+
+  // Add saved toggle button to header
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowSavedOnly(prev => !prev);
+          }}
+          style={styles.headerButton}
+          accessibilityRole="button"
+          accessibilityLabel={showSavedOnly ? 'Show all programs' : 'Show saved programs only'}
+          accessibilityState={{ selected: showSavedOnly }}
+        >
+          <Ionicons
+            name={showSavedOnly ? 'star' : 'star-outline'}
+            size={24}
+            color={showSavedOnly ? '#f59e0b' : colors.text}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, showSavedOnly, colors.text]);
 
   useEffect(() => {
     loadData();
@@ -114,6 +140,12 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
 
   const filteredPrograms = useMemo(() => {
     let filtered = programs;
+
+    // Filter to saved only if toggle is active
+    if (showSavedOnly) {
+      filtered = filtered.filter(p => favorites.includes(p.id));
+    }
+
     if (selectedCategory) {
       filtered = filtered.filter(p => p.category === selectedCategory);
     }
@@ -175,7 +207,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
     }
 
     return sorted;
-  }, [programs, selectedCategory, selectedArea, sortBy]);
+  }, [programs, selectedCategory, selectedArea, sortBy, showSavedOnly, favorites]);
 
   const handleToggleFavorite = useCallback(async (programId: string) => {
     // Optimistic update with safe functional state updates
@@ -348,13 +380,15 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   );
 
   const renderSortAndFilters = () => {
-    const hasFilters = selectedCategory || selectedArea;
+    const hasFilters = selectedCategory || selectedArea || showSavedOnly;
 
     return (
       <View style={[styles.sortAndFiltersContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.sortRow}>
           <Text style={[styles.activeFiltersText, { color: colors.textSecondary }]}>
-            {hasFilters
+            {showSavedOnly
+              ? `${filteredPrograms.length} saved program${filteredPrograms.length !== 1 ? 's' : ''}`
+              : hasFilters
               ? `Showing ${filteredPrograms.length} of ${programs.length} programs`
               : `${programs.length} programs`}
           </Text>
@@ -373,6 +407,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
             onPress={() => {
               setSelectedCategory(null);
               setSelectedArea(null);
+              setShowSavedOnly(false);
             }}
             style={styles.clearFiltersButton}
             accessibilityRole="button"
@@ -416,7 +451,17 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
         onRefresh={loadData}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No programs found</Text>
+            {showSavedOnly ? (
+              <>
+                <Ionicons name="star-outline" size={48} color={colors.textSecondary} style={styles.emptyIcon} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No saved programs yet</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+                  Tap the star on any program to save it
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No programs found</Text>
+            )}
           </View>
         }
       />
@@ -514,8 +559,21 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
   },
+  emptyIcon: {
+    marginBottom: 16,
+  },
   emptyText: {
     fontSize: 16,
+    fontWeight: '500',
     color: '#6b7280',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  headerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
 });
