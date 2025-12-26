@@ -49,3 +49,9 @@ yarn-error.*
 # Logs
 logs/
 *.log
+
+# Duplicate files (macOS/backup artifacts)
+* 2
+* 2.*
+* 3
+* 3.*

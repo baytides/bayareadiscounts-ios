@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { loadCrashReportingPreference } from './src/utils/crashReporting';
+import appConfig from './app.json';
 
 // Flag to track if Sentry has been initialized
 let sentryInitialized = false;
@@ -15,8 +16,13 @@ function initializeSentry() {
     dsn: 'https://d1129af3b07f8a71664d5b10f3756aba@o4510598177095680.ingest.us.sentry.io/4510598247219200',
     // Disable in development
     enabled: !__DEV__,
-    // Set sample rate for performance monitoring (0.2 = 20% of transactions)
-    tracesSampleRate: 0.2,
+    // Release tracking for better debugging
+    release: `org.baytides.bayareadiscounts@${appConfig.expo.version}+${appConfig.expo.ios.buildNumber}`,
+    environment: __DEV__ ? 'development' : 'production',
+    // Disable performance tracing for privacy
+    tracesSampleRate: 0,
+    // Don't send default PII
+    sendDefaultPii: false,
     // Strip PII from crash reports
     beforeSend(event) {
       // Remove user IP address

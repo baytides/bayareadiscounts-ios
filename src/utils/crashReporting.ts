@@ -5,6 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react';
+import appConfig from '../../app.json';
 
 const CRASH_REPORTING_KEY = '@bay_area_discounts:crash_reporting_enabled';
 
@@ -39,7 +40,10 @@ export async function setCrashReportingEnabled(enabled: boolean): Promise<void> 
       Sentry.init({
         dsn: 'https://d1129af3b07f8a71664d5b10f3756aba@o4510598177095680.ingest.us.sentry.io/4510598247219200',
         enabled: !__DEV__,
-        tracesSampleRate: 0.2,
+        release: `org.baytides.bayareadiscounts@${appConfig.expo.version}+${appConfig.expo.ios.buildNumber}`,
+        environment: __DEV__ ? 'development' : 'production',
+        tracesSampleRate: 0,
+        sendDefaultPii: false,
         beforeSend(event) {
           if (event.user) {
             delete event.user.ip_address;
