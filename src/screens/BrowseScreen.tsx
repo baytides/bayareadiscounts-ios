@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BrowseStackParamList } from '../navigation/AppNavigator';
-import { Program } from '../types';
+import { Program, Eligibility } from '../types';
 import APIService from '../services/api';
 import ProgramCard from '../components/ProgramCard';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -74,9 +74,11 @@ const BROAD_AREAS = ['Bay Area', 'Bay Area-wide', 'Statewide', 'California', 'Na
 export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   const { colors } = useTheme();
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [eligibilityTypes, setEligibilityTypes] = useState<Eligibility[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [selectedEligibility, setSelectedEligibility] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,12 +118,14 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
       setLoading(true);
       setError(null);
 
-      const [programsData, favoritesData] = await Promise.all([
+      const [programsData, eligibilityData, favoritesData] = await Promise.all([
         APIService.getPrograms(),
+        APIService.getEligibility(),
         APIService.getFavorites(),
       ]);
 
       setPrograms(programsData);
+      setEligibilityTypes(eligibilityData);
       setFavorites(favoritesData);
     } catch (err) {
       setError('Failed to load programs. Please check your connection and try again.');
@@ -163,6 +167,12 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           p.areas.includes(selectedArea) || p.areas.some(area => BROAD_AREAS.includes(area))
         );
       }
+    }
+
+    if (selectedEligibility.length > 0) {
+      filtered = filtered.filter(p =>
+        selectedEligibility.some(e => p.eligibility.includes(e))
+      );
     }
 
     // Apply sorting
@@ -208,7 +218,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
     }
 
     return sorted;
-  }, [programs, selectedCategory, selectedArea, sortBy, showSavedOnly, favorites]);
+  }, [programs, selectedCategory, selectedArea, selectedEligibility, sortBy, showSavedOnly, favorites]);
 
   const handleToggleFavorite = useCallback(async (programId: string) => {
     // Optimistic update with safe functional state updates
@@ -236,6 +246,16 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
     }
   }, [favorites]);
 
+  const toggleEligibility = (eligibilityId: string) => {
+    setSelectedEligibility(prev => {
+      if (prev.includes(eligibilityId)) {
+        return prev.filter(e => e !== eligibilityId);
+      } else {
+        return [...prev, eligibilityId];
+      }
+    });
+  };
+
   const handleSortChange = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
@@ -251,6 +271,59 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   const getSortLabel = (): string => {
     return SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Name (A-Z)';
   };
+
+  const renderEligibilityFilter = () => (
+    <View style={[styles.filterContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <Text style={[styles.filterLabel, { color: colors.textSecondary }]}>Eligibility</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScroll}
+      >
+        <TouchableOpacity
+          style={[
+            styles.filterChip,
+            { backgroundColor: colors.inputBackground },
+            selectedEligibility.length === 0 && styles.filterChipActive,
+          ]}
+          onPress={() => setSelectedEligibility([])}
+          accessibilityRole="button"
+          accessibilityLabel="All eligibility types"
+          accessibilityState={{ selected: selectedEligibility.length === 0 }}
+        >
+          <Text style={[styles.filterText, { color: colors.text }, selectedEligibility.length === 0 && styles.filterTextActive]}>
+            All
+          </Text>
+        </TouchableOpacity>
+
+        {eligibilityTypes.map(eligibility => (
+          <TouchableOpacity
+            key={eligibility.id}
+            style={[
+              styles.filterChip,
+              { backgroundColor: colors.inputBackground },
+              selectedEligibility.includes(eligibility.id) && styles.filterChipActive,
+            ]}
+            onPress={() => toggleEligibility(eligibility.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`${eligibility.name} eligibility`}
+            accessibilityState={{ selected: selectedEligibility.includes(eligibility.id) }}
+          >
+            <Text style={styles.filterIcon} accessible={false}>{eligibility.icon}</Text>
+            <Text
+              style={[
+                styles.filterText,
+                { color: colors.text },
+                selectedEligibility.includes(eligibility.id) && styles.filterTextActive,
+              ]}
+            >
+              {eligibility.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
 
   const renderCategoryFilter = () => (
     <View style={[styles.filterContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -381,7 +454,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   );
 
   const renderSortAndFilters = () => {
-    const hasFilters = selectedCategory || selectedArea || showSavedOnly;
+    const hasFilters = selectedCategory || selectedArea || selectedEligibility.length > 0 || showSavedOnly;
 
     return (
       <View style={[styles.sortAndFiltersContainer, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -408,6 +481,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
             onPress={() => {
               setSelectedCategory(null);
               setSelectedArea(null);
+              setSelectedEligibility([]);
               setShowSavedOnly(false);
             }}
             style={styles.clearFiltersButton}
@@ -424,6 +498,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
 
   const renderListHeader = () => (
     <View>
+      {renderEligibilityFilter()}
       {renderCategoryFilter()}
       {renderAreaFilter()}
       {renderSortAndFilters()}
