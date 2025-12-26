@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bay Area Discounts",
     "slug": "bayareadiscounts-ios",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "platforms": [
       "ios"
     ],
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "org.baytides.bayareadiscounts",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
           "https",

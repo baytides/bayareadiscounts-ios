@@ -12,8 +12,9 @@ import {
   Alert,
   Linking,
   Switch,
-  AccessibilityInfo,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import APIService from '../services/api';
 import appConfig from '../../app.json';
@@ -22,6 +23,7 @@ import {
   loadCrashReportingPreference,
   setCrashReportingEnabled,
 } from '../utils/crashReporting';
+import type { SettingsStackParamList } from '../navigation/AppNavigator';
 
 const version = appConfig.expo.version;
 
@@ -35,40 +37,21 @@ const formatBytes = (bytes: number, decimals = 2) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
+type NavigationProp = NativeStackNavigationProp<SettingsStackParamList>;
+
 export default function SettingsScreen() {
+  const navigation = useNavigation<NavigationProp>();
   const { colors, mode, setMode, isDark } = useTheme();
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [metadata, setMetadata] = useState<any>(null);
   const [crashReportingEnabled, setCrashReporting] = useState<boolean>(true);
-  const [reduceMotionEnabled, setReduceMotionEnabled] = useState<boolean>(false);
-  const [screenReaderEnabled, setScreenReaderEnabled] = useState<boolean>(false);
   const [refreshingData, setRefreshingData] = useState<boolean>(false);
 
-  const checkAccessibilitySettings = async () => {
-    try {
-      const reduceMotion = await AccessibilityInfo.isReduceMotionEnabled();
-      const screenReader = await AccessibilityInfo.isScreenReaderEnabled();
-      setReduceMotionEnabled(reduceMotion);
-      setScreenReaderEnabled(screenReader);
-    } catch (err) {
-      console.error('Error checking accessibility settings:', err);
-    }
-
-    // Listen for changes
-    const reduceMotionSubscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged',
-      (enabled) => setReduceMotionEnabled(enabled)
-    );
-    const screenReaderSubscription = AccessibilityInfo.addEventListener(
-      'screenReaderChanged',
-      (enabled) => setScreenReaderEnabled(enabled)
-    );
-
-    return () => {
-      reduceMotionSubscription?.remove();
-      screenReaderSubscription?.remove();
-    };
-  };
+  useEffect(() => {
+    loadMetadata();
+    calculateCacheSize();
+    loadCrashReportingSetting();
+  }, []);
 
   const loadCrashReportingSetting = async () => {
     const enabled = await loadCrashReportingPreference();
@@ -120,38 +103,9 @@ export default function SettingsScreen() {
     }
   };
 
-  useEffect(() => {
-    loadMetadata();
-    calculateCacheSize();
-    loadCrashReportingSetting();
-    checkAccessibilitySettings();
-  }, []);
-
-  const handleOpenAccessibilitySettings = async () => {
+  const handleNavigateToAccessibility = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      await Linking.openURL('app-settings:');
-    } catch (err) {
-      Alert.alert(
-        'Cannot Open Settings',
-        'Please open the Settings app and navigate to Accessibility.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
-  const handleShowAccessibilityInfo = () => {
-    Alert.alert(
-      'Accessibility Features',
-      'This app supports the following accessibility features:\n\n' +
-      '• VoiceOver: All elements are properly labeled for screen readers.\n\n' +
-      '• Reduce Motion: Animations are disabled when this setting is enabled in your device settings.\n\n' +
-      '• Dynamic Type: Text sizes respect your device\'s font size preferences (up to 1.5x).\n\n' +
-      '• Dark Mode: Reduces eye strain in low-light conditions.\n\n' +
-      '• High Contrast: Compatible with system accessibility display settings.\n\n' +
-      'To adjust these settings, go to Settings > Accessibility.',
-      [{ text: 'OK' }]
-    );
+    navigation.navigate('Accessibility');
   };
 
   const handleRefreshData = async () => {
@@ -168,7 +122,7 @@ export default function SettingsScreen() {
       if (hasDataUpdate) {
         setMetadata(freshMeta);
         Alert.alert(
-          'Data Updated',
+          'Database Updated',
           `Program data has been refreshed.\n\nTotal programs: ${freshMeta.totalPrograms}\nLast updated: ${new Date(freshMeta.generatedAt).toLocaleDateString()}`,
           [{ text: 'OK' }]
         );
@@ -347,79 +301,7 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView>
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
-          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-            <TouchableOpacity
-              style={styles.rowButton}
-              onPress={handleThemeChange}
-              accessibilityLabel="Change theme"
-              accessibilityRole="button"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.buttonIcon}>{isDark ? '🌙' : '☀️'}</Text>
-                <Text style={[styles.buttonText, { color: colors.primary }]}>Theme</Text>
-              </View>
-              <Text style={[styles.value, { color: colors.textSecondary }]}>{getThemeModeLabel()}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Accessibility</Text>
-          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-            <View style={styles.row}>
-              <View style={styles.rowTextContainer}>
-                <Text style={[styles.label, { color: colors.text }]}>VoiceOver</Text>
-                <Text style={[styles.sublabel, { color: colors.textSecondary }]}>
-                  {screenReaderEnabled ? 'VoiceOver is active' : 'Not active'}
-                </Text>
-              </View>
-              <Text style={[styles.statusIndicator, { color: screenReaderEnabled ? colors.success : colors.textSecondary }]}>
-                {screenReaderEnabled ? '●' : '○'}
-              </Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <View style={styles.row}>
-              <View style={styles.rowTextContainer}>
-                <Text style={[styles.label, { color: colors.text }]}>Reduce Motion</Text>
-                <Text style={[styles.sublabel, { color: colors.textSecondary }]}>
-                  {reduceMotionEnabled ? 'Animations reduced' : 'Animations enabled'}
-                </Text>
-              </View>
-              <Text style={[styles.statusIndicator, { color: reduceMotionEnabled ? colors.success : colors.textSecondary }]}>
-                {reduceMotionEnabled ? '●' : '○'}
-              </Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.rowButton}
-              onPress={handleShowAccessibilityInfo}
-              accessibilityLabel="View supported accessibility features"
-              accessibilityRole="button"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.buttonIcon}>ℹ️</Text>
-                <Text style={[styles.buttonText, { color: colors.primary }]}>Supported Features</Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
-            </TouchableOpacity>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.rowButton}
-              onPress={handleOpenAccessibilitySettings}
-              accessibilityLabel="Open device accessibility settings"
-              accessibilityRole="button"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.buttonIcon}>⚙️</Text>
-                <Text style={[styles.buttonText, { color: colors.primary }]}>Device Settings</Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
+        {/* About Section - At the top */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>About</Text>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
@@ -431,7 +313,7 @@ export default function SettingsScreen() {
               <>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 <View style={styles.row}>
-                  <Text style={[styles.label, { color: colors.text }]}>API Version</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>Database Version</Text>
                   <Text style={[styles.value, { color: colors.textSecondary }]}>{metadata.version}</Text>
                 </View>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -453,14 +335,14 @@ export default function SettingsScreen() {
               style={styles.rowButton}
               onPress={handleRefreshData}
               disabled={refreshingData}
-              accessibilityLabel="Refresh program data"
+              accessibilityLabel="Refresh program database"
               accessibilityRole="button"
               accessibilityState={{ disabled: refreshingData }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={styles.buttonIcon}>🔄</Text>
                 <Text style={[styles.buttonText, { color: refreshingData ? colors.textSecondary : colors.primary }]}>
-                  {refreshingData ? 'Refreshing...' : 'Refresh Data'}
+                  {refreshingData ? 'Refreshing...' : 'Refresh Database'}
                 </Text>
               </View>
               <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
@@ -468,6 +350,39 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Appearance */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Appearance</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleThemeChange}
+              accessibilityLabel="Change theme"
+              accessibilityRole="button"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>{isDark ? '🌙' : '☀️'}</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Theme</Text>
+              </View>
+              <Text style={[styles.value, { color: colors.textSecondary }]}>{getThemeModeLabel()}</Text>
+            </TouchableOpacity>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleNavigateToAccessibility}
+              accessibilityLabel="View accessibility settings"
+              accessibilityRole="button"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>♿</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Accessibility</Text>
+              </View>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Storage */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Storage</Text>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
@@ -485,75 +400,28 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Privacy</Text>
-          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-            <View style={styles.row}>
-              <View style={styles.rowTextContainer}>
-                <Text style={[styles.label, { color: colors.text }]}>Crash Reporting</Text>
-                <Text style={[styles.sublabel, { color: colors.textSecondary }]}>
-                  Help improve the app by sending anonymous crash reports
-                </Text>
-              </View>
-              <Switch
-                value={crashReportingEnabled}
-                onValueChange={handleCrashReportingToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#ffffff"
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Feedback</Text>
-          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
-            <TouchableOpacity
-              style={styles.rowButton}
-              onPress={handleSendFeedback}
-              accessibilityLabel="Send feedback"
-              accessibilityRole="button"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.buttonIcon}>💬</Text>
-                <Text style={[styles.buttonText, { color: colors.primary }]}>Send Feedback</Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
-            </TouchableOpacity>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity
-              style={styles.rowButton}
-              onPress={handleReportIssue}
-              accessibilityLabel="Report a bug or issue"
-              accessibilityRole="button"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.buttonIcon}>🐛</Text>
-                <Text style={[styles.buttonText, { color: colors.primary }]}>Report an Issue</Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
+        {/* Support Our Work */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support Our Work</Text>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <View style={[styles.donationHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.donationTitle, { color: colors.text }]}>Help Keep This App Free</Text>
+              <Text style={[styles.donationDescription, { color: colors.textSecondary }]}>
+                Bay Area Discounts is a volunteer-run project. Your donation helps us maintain the app and add new programs.
+              </Text>
+            </View>
             <TouchableOpacity
-              style={styles.rowButton}
+              style={[styles.donateButton, { backgroundColor: colors.success }]}
               onPress={handleDonate}
               accessibilityLabel="Donate to support Bay Area Discounts"
-              accessibilityRole="link"
+              accessibilityRole="button"
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.buttonIcon}>💚</Text>
-                <Text style={[styles.buttonText, { color: colors.primary }]}>Donate</Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
+              <Text style={styles.donateButtonText}>Donate via Website</Text>
             </TouchableOpacity>
           </View>
         </View>
 
+        {/* Links */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Links</Text>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
@@ -585,9 +453,57 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Feedback */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Legal</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Feedback</Text>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleSendFeedback}
+              accessibilityLabel="Send feedback"
+              accessibilityRole="button"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>💬</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Send Feedback</Text>
+              </View>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
+            </TouchableOpacity>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleReportIssue}
+              accessibilityLabel="Report a bug or issue"
+              accessibilityRole="button"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>🐛</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Report an Issue</Text>
+              </View>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Legal & Privacy */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Legal & Privacy</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <View style={styles.row}>
+              <View style={styles.rowTextContainer}>
+                <Text style={[styles.label, { color: colors.text }]}>Crash Reporting</Text>
+                <Text style={[styles.sublabel, { color: colors.textSecondary }]}>
+                  Help improve the app by sending anonymous crash reports
+                </Text>
+              </View>
+              <Switch
+                value={crashReportingEnabled}
+                onValueChange={handleCrashReportingToggle}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#ffffff"
+              />
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <TouchableOpacity
               style={styles.rowButton}
               onPress={handleShowDisclaimer}
@@ -645,7 +561,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   section: {
     marginTop: 24,
@@ -654,13 +569,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6b7280',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   card: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -685,7 +598,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: '#374151',
   },
   sublabel: {
     fontSize: 13,
@@ -697,15 +609,12 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 16,
-    color: '#6b7280',
   },
   buttonText: {
     fontSize: 16,
-    color: '#2563eb',
   },
   buttonTextDanger: {
     fontSize: 16,
-    color: '#dc2626',
   },
   buttonIcon: {
     fontSize: 20,
@@ -713,15 +622,9 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 24,
-    color: '#d1d5db',
-  },
-  statusIndicator: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: '#e5e7eb',
     marginLeft: 16,
   },
   footer: {
@@ -731,12 +634,41 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
     marginBottom: 4,
   },
   footerSubtext: {
     fontSize: 13,
-    color: '#9ca3af',
     textAlign: 'center',
+  },
+  donationHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  donationTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  donationDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  donateButton: {
+    margin: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  donateButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
   },
 });
