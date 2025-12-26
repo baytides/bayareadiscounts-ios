@@ -1,6 +1,29 @@
 import { StatusBar } from 'expo-status-bar';
+import * as Sentry from '@sentry/react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+
+// Initialize Sentry for crash reporting
+// DSN will be set via SENTRY_DSN environment variable or app.json extra
+Sentry.init({
+  dsn: 'https://d1129af3b07f8a71664d5b10f3756aba@o4510598177095680.ingest.us.sentry.io/4510598247219200',
+  // Disable in development
+  enabled: !__DEV__,
+  // Set sample rate for performance monitoring (0.2 = 20% of transactions)
+  tracesSampleRate: 0.2,
+  // Strip PII from crash reports
+  beforeSend(event) {
+    // Remove user IP address
+    if (event.user) {
+      delete event.user.ip_address;
+    }
+    // Remove device identifiers
+    if (event.contexts?.device) {
+      delete event.contexts.device.device_id;
+    }
+    return event;
+  },
+});
 
 function AppContent() {
   const { isDark } = useTheme();
@@ -12,10 +35,13 @@ function AppContent() {
   );
 }
 
-export default function App() {
+function App() {
   return (
     <ThemeProvider>
       <AppContent />
     </ThemeProvider>
   );
 }
+
+// Wrap with Sentry for automatic error boundary
+export default Sentry.wrap(App);

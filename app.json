@@ -26,6 +26,16 @@
         ]
       },
       "appleTeamId": "C5U8Z5536K"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "baytides",
+          "project": "bayareadiscounts-ios"
+        }
+      ]
+    ]
   }
 }
