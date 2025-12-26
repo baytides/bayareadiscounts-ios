@@ -12,6 +12,7 @@ import {
   Alert,
   Linking,
   Switch,
+  AccessibilityInfo,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import APIService from '../services/api';
@@ -39,6 +40,35 @@ export default function SettingsScreen() {
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [metadata, setMetadata] = useState<any>(null);
   const [crashReportingEnabled, setCrashReporting] = useState<boolean>(true);
+  const [reduceMotionEnabled, setReduceMotionEnabled] = useState<boolean>(false);
+  const [screenReaderEnabled, setScreenReaderEnabled] = useState<boolean>(false);
+  const [refreshingData, setRefreshingData] = useState<boolean>(false);
+
+  const checkAccessibilitySettings = async () => {
+    try {
+      const reduceMotion = await AccessibilityInfo.isReduceMotionEnabled();
+      const screenReader = await AccessibilityInfo.isScreenReaderEnabled();
+      setReduceMotionEnabled(reduceMotion);
+      setScreenReaderEnabled(screenReader);
+    } catch (err) {
+      console.error('Error checking accessibility settings:', err);
+    }
+
+    // Listen for changes
+    const reduceMotionSubscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      (enabled) => setReduceMotionEnabled(enabled)
+    );
+    const screenReaderSubscription = AccessibilityInfo.addEventListener(
+      'screenReaderChanged',
+      (enabled) => setScreenReaderEnabled(enabled)
+    );
+
+    return () => {
+      reduceMotionSubscription?.remove();
+      screenReaderSubscription?.remove();
+    };
+  };
 
   const loadCrashReportingSetting = async () => {
     const enabled = await loadCrashReportingPreference();
@@ -94,7 +124,71 @@ export default function SettingsScreen() {
     loadMetadata();
     calculateCacheSize();
     loadCrashReportingSetting();
+    checkAccessibilitySettings();
   }, []);
+
+  const handleOpenAccessibilitySettings = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await Linking.openURL('app-settings:');
+    } catch (err) {
+      Alert.alert(
+        'Cannot Open Settings',
+        'Please open the Settings app and navigate to Accessibility.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleShowAccessibilityInfo = () => {
+    Alert.alert(
+      'Accessibility Features',
+      'This app supports the following accessibility features:\n\n' +
+      '• VoiceOver: All elements are properly labeled for screen readers.\n\n' +
+      '• Reduce Motion: Animations are disabled when this setting is enabled in your device settings.\n\n' +
+      '• Dynamic Type: Text sizes respect your device\'s font size preferences (up to 1.5x).\n\n' +
+      '• Dark Mode: Reduces eye strain in low-light conditions.\n\n' +
+      '• High Contrast: Compatible with system accessibility display settings.\n\n' +
+      'To adjust these settings, go to Settings > Accessibility.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleRefreshData = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setRefreshingData(true);
+
+    try {
+      const currentMeta = metadata;
+      const freshMeta = await APIService.getMetadata(true); // Force refresh
+
+      const hasDataUpdate = currentMeta && freshMeta &&
+        new Date(freshMeta.generatedAt) > new Date(currentMeta.generatedAt);
+
+      if (hasDataUpdate) {
+        setMetadata(freshMeta);
+        Alert.alert(
+          'Data Updated',
+          `Program data has been refreshed.\n\nTotal programs: ${freshMeta.totalPrograms}\nLast updated: ${new Date(freshMeta.generatedAt).toLocaleDateString()}`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Already Up to Date',
+          'You have the latest program data.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        'Refresh Failed',
+        'Unable to refresh data. Please check your internet connection and try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setRefreshingData(false);
+    }
+  };
 
   const handleDonate = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -272,6 +366,61 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Accessibility</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <View style={styles.row}>
+              <View style={styles.rowTextContainer}>
+                <Text style={[styles.label, { color: colors.text }]}>VoiceOver</Text>
+                <Text style={[styles.sublabel, { color: colors.textSecondary }]}>
+                  {screenReaderEnabled ? 'VoiceOver is active' : 'Not active'}
+                </Text>
+              </View>
+              <Text style={[styles.statusIndicator, { color: screenReaderEnabled ? colors.success : colors.textSecondary }]}>
+                {screenReaderEnabled ? '●' : '○'}
+              </Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.row}>
+              <View style={styles.rowTextContainer}>
+                <Text style={[styles.label, { color: colors.text }]}>Reduce Motion</Text>
+                <Text style={[styles.sublabel, { color: colors.textSecondary }]}>
+                  {reduceMotionEnabled ? 'Animations reduced' : 'Animations enabled'}
+                </Text>
+              </View>
+              <Text style={[styles.statusIndicator, { color: reduceMotionEnabled ? colors.success : colors.textSecondary }]}>
+                {reduceMotionEnabled ? '●' : '○'}
+              </Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleShowAccessibilityInfo}
+              accessibilityLabel="View supported accessibility features"
+              accessibilityRole="button"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>ℹ️</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Supported Features</Text>
+              </View>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
+            </TouchableOpacity>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleOpenAccessibilitySettings}
+              accessibilityLabel="Open device accessibility settings"
+              accessibilityRole="button"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>⚙️</Text>
+                <Text style={[styles.buttonText, { color: colors.primary }]}>Device Settings</Text>
+              </View>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>About</Text>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <View style={styles.row}>
@@ -299,6 +448,23 @@ export default function SettingsScreen() {
                 </View>
               </>
             )}
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={handleRefreshData}
+              disabled={refreshingData}
+              accessibilityLabel="Refresh program data"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: refreshingData }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.buttonIcon}>🔄</Text>
+                <Text style={[styles.buttonText, { color: refreshingData ? colors.textSecondary : colors.primary }]}>
+                  {refreshingData ? 'Refreshing...' : 'Refresh Data'}
+                </Text>
+              </View>
+              <Text style={[styles.chevron, { color: colors.border }]}>›</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -548,6 +714,10 @@ const styles = StyleSheet.create({
   chevron: {
     fontSize: 24,
     color: '#d1d5db',
+  },
+  statusIndicator: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   divider: {
     height: 1,
