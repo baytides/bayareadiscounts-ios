@@ -12,6 +12,7 @@ import {
   Alert,
   Linking,
   Switch,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -301,6 +302,19 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView>
+        {/* Logo Banner */}
+        <View style={[styles.logoContainer, { backgroundColor: colors.surface }]}>
+          <Image
+            source={require('../../assets/images/favicons/web-app-manifest-512x512.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <Text style={[styles.logoText, { color: colors.text }]}>Bay Area Discounts</Text>
+          <Text style={[styles.logoTagline, { color: colors.textSecondary }]}>
+            Your guide to local savings & benefits
+          </Text>
+        </View>
+
         {/* About Section - At the top */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>About</Text>
@@ -561,6 +575,26 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 32,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  logoText: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  logoTagline: {
+    fontSize: 14,
+    textAlign: 'center',
   },
   section: {
     marginTop: 24,
