@@ -622,29 +622,45 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   filterChip3D: {
-    // visionOS: Elevated pill with glass-like depth
+    // visionOS: Larger touch target + elevated pill with glass-like depth
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 24,
+    marginRight: 12,
+    // Strong floating shadow
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 1,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 10,
+    // Thick beveled glass border
+    borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderTopColor: 'rgba(255, 255, 255, 0.5)',
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderTopColor: 'rgba(255, 255, 255, 0.7)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.5)',
+    borderRightColor: 'rgba(0, 0, 0, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.15)',
+    // Frosted glass background
+    backgroundColor: 'rgba(243, 244, 246, 0.9)',
   },
   filterChipActive: {
     backgroundColor: '#2563eb',
   },
   filterChipActive3D: {
-    // visionOS: Active state with stronger depth
+    // visionOS: Active state with stronger depth and glow
+    backgroundColor: 'rgba(37, 99, 235, 0.95)',
     shadowColor: '#1d4ed8',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-    borderTopColor: 'rgba(255, 255, 255, 0.4)',
-    borderBottomColor: 'rgba(0, 0, 0, 0.2)',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
+    borderTopColor: 'rgba(255, 255, 255, 0.5)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.25)',
+  },
+  filterText3D: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   filterIcon: {
     fontSize: 16,

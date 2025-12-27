@@ -70,12 +70,13 @@ export function useResponsiveLayout(): ResponsiveLayout {
   // 3D elevated card styling - primarily for visionOS, subtle on other devices
   const cardElevationStyle: ViewStyle = isVisionOS
     ? {
-        // visionOS: Strong depth with multiple shadow layers for glass-like effect
+        // visionOS: Deep, dramatic shadow that makes cards float in space
+        // This creates the "physical object floating in AR" effect
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.35,
-        shadowRadius: 24,
-        elevation: 16,
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.5,
+        shadowRadius: 40,
+        elevation: 24,
       }
     : isTablet
     ? {
@@ -98,13 +99,14 @@ export function useResponsiveLayout(): ResponsiveLayout {
   // 3D border styling - creates a beveled, raised appearance (primarily for visionOS)
   const cardBorderStyle: ViewStyle = isVisionOS
     ? {
-        // visionOS: Glass-like beveled border for depth
-        borderWidth: 1.5,
-        borderColor: 'rgba(255, 255, 255, 0.25)',
-        borderTopColor: 'rgba(255, 255, 255, 0.6)',
-        borderLeftColor: 'rgba(255, 255, 255, 0.4)',
-        borderRightColor: 'rgba(0, 0, 0, 0.15)',
-        borderBottomColor: 'rgba(0, 0, 0, 0.2)',
+        // visionOS: Thick glass-like border with strong light/dark contrast
+        // Simulates light hitting the top edge of a physical glass panel
+        borderWidth: 2,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
+        borderTopColor: 'rgba(255, 255, 255, 0.8)',
+        borderLeftColor: 'rgba(255, 255, 255, 0.5)',
+        borderRightColor: 'rgba(0, 0, 0, 0.2)',
+        borderBottomColor: 'rgba(0, 0, 0, 0.3)',
       }
     : {
         // iPad and iPhone: No special border
