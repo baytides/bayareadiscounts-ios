@@ -12,6 +12,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -73,6 +74,7 @@ const BROAD_AREAS = ['Bay Area', 'Bay Area-wide', 'Statewide', 'California', 'Na
 
 export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   const { colors } = useTheme();
+  const { numColumns, isTablet, isVisionOS, horizontalPadding } = useResponsiveLayout();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [eligibilityTypes, setEligibilityTypes] = useState<Eligibility[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -284,7 +286,9 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           style={[
             styles.filterChip,
             { backgroundColor: colors.inputBackground },
+            isVisionOS && styles.filterChip3D,
             selectedEligibility.length === 0 && styles.filterChipActive,
+            selectedEligibility.length === 0 && isVisionOS && styles.filterChipActive3D,
           ]}
           onPress={() => setSelectedEligibility([])}
           accessibilityRole="button"
@@ -302,7 +306,9 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
             style={[
               styles.filterChip,
               { backgroundColor: colors.inputBackground },
+              isVisionOS && styles.filterChip3D,
               selectedEligibility.includes(eligibility.id) && styles.filterChipActive,
+              selectedEligibility.includes(eligibility.id) && isVisionOS && styles.filterChipActive3D,
             ]}
             onPress={() => toggleEligibility(eligibility.id)}
             accessibilityRole="button"
@@ -334,7 +340,13 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
         contentContainerStyle={styles.filterScroll}
       >
         <TouchableOpacity
-          style={[styles.filterChip, { backgroundColor: colors.inputBackground }, !selectedCategory && styles.filterChipActive]}
+          style={[
+            styles.filterChip,
+            { backgroundColor: colors.inputBackground },
+            isVisionOS && styles.filterChip3D,
+            !selectedCategory && styles.filterChipActive,
+            !selectedCategory && isVisionOS && styles.filterChipActive3D,
+          ]}
           onPress={() => setSelectedCategory(null)}
           accessibilityRole="button"
           accessibilityLabel="All categories"
@@ -347,25 +359,28 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
 
         {derivedCategories.map(categoryId => {
           const config = CATEGORY_CONFIG[categoryId] || { name: categoryId, icon: '📋' };
+          const isSelected = selectedCategory === categoryId;
           return (
             <TouchableOpacity
               key={categoryId}
               style={[
                 styles.filterChip,
                 { backgroundColor: colors.inputBackground },
-                selectedCategory === categoryId && styles.filterChipActive,
+                isVisionOS && styles.filterChip3D,
+                isSelected && styles.filterChipActive,
+                isSelected && isVisionOS && styles.filterChipActive3D,
               ]}
               onPress={() => setSelectedCategory(prev => prev === categoryId ? null : categoryId)}
               accessibilityRole="button"
               accessibilityLabel={`${config.name} category`}
-              accessibilityState={{ selected: selectedCategory === categoryId }}
+              accessibilityState={{ selected: isSelected }}
             >
               <Text style={styles.filterIcon} accessible={false}>{config.icon}</Text>
               <Text
                 style={[
                   styles.filterText,
                   { color: colors.text },
-                  selectedCategory === categoryId && styles.filterTextActive,
+                  isSelected && styles.filterTextActive,
                 ]}
               >
                 {config.name}
@@ -389,7 +404,9 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           style={[
             styles.filterChip,
             { backgroundColor: colors.inputBackground },
+            isVisionOS && styles.filterChip3D,
             !selectedArea && styles.filterChipActive,
+            !selectedArea && isVisionOS && styles.filterChipActive3D,
           ]}
           onPress={() => setSelectedArea(null)}
           accessibilityRole="button"
@@ -401,37 +418,44 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           </Text>
         </TouchableOpacity>
 
-        {BAY_AREA_COUNTIES.map(county => (
-          <TouchableOpacity
-            key={county.id}
-            style={[
-              styles.filterChip,
-              { backgroundColor: colors.inputBackground },
-              selectedArea === county.id && styles.filterChipActive,
-            ]}
-            onPress={() => setSelectedArea(prev => prev === county.id ? null : county.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`${county.name} area`}
-            accessibilityState={{ selected: selectedArea === county.id }}
-          >
-            <Text style={styles.filterIcon} accessible={false}>{county.icon}</Text>
-            <Text
+        {BAY_AREA_COUNTIES.map(county => {
+          const isSelected = selectedArea === county.id;
+          return (
+            <TouchableOpacity
+              key={county.id}
               style={[
-                styles.filterText,
-                { color: colors.text },
-                selectedArea === county.id && styles.filterTextActive,
+                styles.filterChip,
+                { backgroundColor: colors.inputBackground },
+                isVisionOS && styles.filterChip3D,
+                isSelected && styles.filterChipActive,
+                isSelected && isVisionOS && styles.filterChipActive3D,
               ]}
+              onPress={() => setSelectedArea(prev => prev === county.id ? null : county.id)}
+              accessibilityRole="button"
+              accessibilityLabel={`${county.name} area`}
+              accessibilityState={{ selected: isSelected }}
             >
-              {county.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={styles.filterIcon} accessible={false}>{county.icon}</Text>
+              <Text
+                style={[
+                  styles.filterText,
+                  { color: colors.text },
+                  isSelected && styles.filterTextActive,
+                ]}
+              >
+                {county.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
 
         <TouchableOpacity
           style={[
             styles.filterChip,
             { backgroundColor: colors.inputBackground },
+            isVisionOS && styles.filterChip3D,
             selectedArea === 'none' && styles.filterChipActive,
+            selectedArea === 'none' && isVisionOS && styles.filterChipActive3D,
           ]}
           onPress={() => setSelectedArea(prev => prev === 'none' ? null : 'none')}
           accessibilityRole="button"
@@ -521,18 +545,26 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         ref={flatListRef}
+        key={numColumns}
         data={filteredPrograms}
+        numColumns={numColumns}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <ProgramCard
-            program={item}
-            onPress={() => navigation.navigate('ProgramDetail', { programId: item.id })}
-            isFavorite={favorites.includes(item.id)}
-            onToggleFavorite={() => handleToggleFavorite(item.id)}
-          />
+          <View style={numColumns > 1 ? { flex: 1, maxWidth: `${100 / numColumns}%` } : undefined}>
+            <ProgramCard
+              program={item}
+              onPress={() => navigation.navigate('ProgramDetail', { programId: item.id })}
+              isFavorite={favorites.includes(item.id)}
+              onToggleFavorite={() => handleToggleFavorite(item.id)}
+            />
+          </View>
         )}
         ListHeaderComponent={renderListHeader}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          isTablet && { paddingHorizontal: horizontalPadding - 16 }
+        ]}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         refreshing={loading}
         onRefresh={loadData}
         onScrollToIndexFailed={() => {}}
@@ -589,8 +621,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     marginRight: 8,
   },
+  filterChip3D: {
+    // visionOS: Elevated pill with glass-like depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderTopColor: 'rgba(255, 255, 255, 0.5)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
   filterChipActive: {
     backgroundColor: '#2563eb',
+  },
+  filterChipActive3D: {
+    // visionOS: Active state with stronger depth
+    shadowColor: '#1d4ed8',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+    borderTopColor: 'rgba(255, 255, 255, 0.4)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.2)',
   },
   filterIcon: {
     fontSize: 16,
@@ -641,6 +695,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 8,
+  },
+  columnWrapper: {
+    justifyContent: 'flex-start',
   },
   emptyContainer: {
     padding: 40,

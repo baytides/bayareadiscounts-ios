@@ -6,7 +6,10 @@
     "platforms": [
       "ios"
     ],
-    "orientation": "portrait",
+    "experiments": {
+      "supportsVisionOS": true
+    },
+    "orientation": "default",
     "icon": "./assets/images/favicons/web-app-manifest-512x512.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,

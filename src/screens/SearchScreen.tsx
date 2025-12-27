@@ -20,6 +20,7 @@ import APIService from '../services/api';
 import ProgramCard from '../components/ProgramCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 type SearchScreenProps = {
   navigation: NativeStackNavigationProp<SearchStackParamList, 'SearchList'>;
@@ -27,6 +28,7 @@ type SearchScreenProps = {
 
 export default function SearchScreen({ navigation }: SearchScreenProps) {
   const { colors } = useTheme();
+  const { numColumns, isTablet, horizontalPadding } = useResponsiveLayout();
   const [searchQuery, setSearchQuery] = useState('');
   const [programs, setPrograms] = useState<Program[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -216,17 +218,25 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
         <LoadingSpinner message="Searching..." />
       ) : searched ? (
         <FlatList
+          key={numColumns}
           data={programs}
+          numColumns={numColumns}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <ProgramCard
-              program={item}
-              onPress={() => navigation.navigate('ProgramDetail', { programId: item.id })}
-              isFavorite={favorites.includes(item.id)}
-              onToggleFavorite={() => handleToggleFavorite(item.id)}
-            />
+            <View style={numColumns > 1 ? { flex: 1, maxWidth: `${100 / numColumns}%` } : undefined}>
+              <ProgramCard
+                program={item}
+                onPress={() => navigation.navigate('ProgramDetail', { programId: item.id })}
+                isFavorite={favorites.includes(item.id)}
+                onToggleFavorite={() => handleToggleFavorite(item.id)}
+              />
+            </View>
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            isTablet && { paddingHorizontal: horizontalPadding - 16 }
+          ]}
+          columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
           refreshing={loading}
           onRefresh={handleSearch}
           ListEmptyComponent={
@@ -290,6 +300,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 8,
+  },
+  columnWrapper: {
+    justifyContent: 'flex-start',
   },
   emptyStateContainer: {
     flex: 1,

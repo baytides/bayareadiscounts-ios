@@ -8,6 +8,7 @@ import { View, Text, TouchableOpacity, StyleSheet, AccessibilityInfo } from 'rea
 import * as Haptics from 'expo-haptics';
 import { Program } from '../types';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 // Helper to safely trigger haptics (respects reduce motion)
 const triggerHaptic = async () => {
@@ -50,15 +51,26 @@ function ProgramCard({
   onToggleFavorite,
 }: ProgramCardProps) {
   const { colors, isDark } = useTheme();
+  const { isTablet, isVisionOS, cardElevationStyle, cardBorderStyle } = useResponsiveLayout();
   const categoryIcon = CATEGORY_ICONS[program.category] || '📋';
   // Display city if available, otherwise fall back to areas (county)
   const areaText = program.city || program.areas.join(', ');
 
+  // Larger border radius for tablets and visionOS for a more modern look
+  const borderRadius = isVisionOS ? 20 : isTablet ? 16 : 12;
+
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.cardBackground }]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.cardBackground, borderRadius },
+        cardElevationStyle,
+        cardBorderStyle,
+        // Extra styling for visionOS
+        isVisionOS && styles.cardVisionOS,
+      ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={isVisionOS ? 0.8 : 0.7}
       accessibilityRole="button"
       accessibilityLabel={`${program.name}. ${program.description}`}
       accessibilityHint="Double-tap to view full program details"
@@ -97,7 +109,15 @@ function ProgramCard({
           <Text style={[styles.label, { color: colors.textSecondary }]}>Eligibility:</Text>
           <View style={styles.tags}>
             {program.eligibility.slice(0, 2).map((tag) => (
-              <View key={tag} style={[styles.tag, { backgroundColor: isDark ? '#1e3a5f' : '#dbeafe' }]}>
+              <View
+                key={tag}
+                style={[
+                  styles.tag,
+                  { backgroundColor: isDark ? '#1e3a5f' : '#dbeafe' },
+                  // 3D effect for tags primarily on visionOS
+                  isVisionOS && styles.tag3D,
+                ]}
+              >
                 <Text style={[styles.tagText, { color: isDark ? '#93c5fd' : '#1e40af' }]}>{formatEligibilityTag(tag)}</Text>
               </View>
             ))}
@@ -127,11 +147,18 @@ const styles = StyleSheet.create({
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 8,
+    // Base shadow - will be overridden by cardElevationStyle
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  cardVisionOS: {
+    padding: 24,
+    marginVertical: 14,
+    // Glass-like background effect for visionOS
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
   },
   header: {
     flexDirection: 'row',
@@ -189,6 +216,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+  tag3D: {
+    // Elevated pill effect for tablets and visionOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.8)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.6)',
+    borderRightColor: 'rgba(0, 0, 0, 0.05)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   tagText: {
     fontSize: 12,

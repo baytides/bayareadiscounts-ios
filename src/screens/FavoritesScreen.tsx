@@ -12,6 +12,7 @@ import APIService from '../services/api';
 import ProgramCard from '../components/ProgramCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useTheme } from '../context/ThemeContext';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 type FavoritesScreenProps = {
   navigation: NativeStackNavigationProp<FavoritesStackParamList, 'FavoritesList'>;
@@ -19,6 +20,7 @@ type FavoritesScreenProps = {
 
 export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
   const { colors } = useTheme();
+  const { numColumns, isTablet, horizontalPadding } = useResponsiveLayout();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,17 +70,25 @@ export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
+        key={numColumns}
         data={programs}
+        numColumns={numColumns}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <ProgramCard
-            program={item}
-            onPress={() => navigation.navigate('ProgramDetail', { programId: item.id })}
-            isFavorite={true}
-            onToggleFavorite={() => handleToggleFavorite(item.id)}
-          />
+          <View style={numColumns > 1 ? { flex: 1, maxWidth: `${100 / numColumns}%` } : undefined}>
+            <ProgramCard
+              program={item}
+              onPress={() => navigation.navigate('ProgramDetail', { programId: item.id })}
+              isFavorite={true}
+              onToggleFavorite={() => handleToggleFavorite(item.id)}
+            />
+          </View>
         )}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          isTablet && { paddingHorizontal: horizontalPadding - 16 }
+        ]}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
         refreshing={loading}
         onRefresh={loadFavorites}
         ListEmptyComponent={
@@ -103,6 +113,9 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 8,
     flexGrow: 1,
+  },
+  columnWrapper: {
+    justifyContent: 'flex-start',
   },
   emptyContainer: {
     flex: 1,
