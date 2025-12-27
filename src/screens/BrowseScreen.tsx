@@ -74,7 +74,7 @@ const BROAD_AREAS = ['Bay Area', 'Bay Area-wide', 'Statewide', 'California', 'Na
 
 export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   const { colors } = useTheme();
-  const { numColumns, isTablet, isVisionOS, horizontalPadding } = useResponsiveLayout();
+  const { numColumns, isTablet, horizontalPadding } = useResponsiveLayout();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [eligibilityTypes, setEligibilityTypes] = useState<Eligibility[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -286,9 +286,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           style={[
             styles.filterChip,
             { backgroundColor: colors.inputBackground },
-            isVisionOS && styles.filterChip3D,
             selectedEligibility.length === 0 && styles.filterChipActive,
-            selectedEligibility.length === 0 && isVisionOS && styles.filterChipActive3D,
           ]}
           onPress={() => setSelectedEligibility([])}
           accessibilityRole="button"
@@ -306,9 +304,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
             style={[
               styles.filterChip,
               { backgroundColor: colors.inputBackground },
-              isVisionOS && styles.filterChip3D,
               selectedEligibility.includes(eligibility.id) && styles.filterChipActive,
-              selectedEligibility.includes(eligibility.id) && isVisionOS && styles.filterChipActive3D,
             ]}
             onPress={() => toggleEligibility(eligibility.id)}
             accessibilityRole="button"
@@ -343,9 +339,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           style={[
             styles.filterChip,
             { backgroundColor: colors.inputBackground },
-            isVisionOS && styles.filterChip3D,
             !selectedCategory && styles.filterChipActive,
-            !selectedCategory && isVisionOS && styles.filterChipActive3D,
           ]}
           onPress={() => setSelectedCategory(null)}
           accessibilityRole="button"
@@ -366,9 +360,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
               style={[
                 styles.filterChip,
                 { backgroundColor: colors.inputBackground },
-                isVisionOS && styles.filterChip3D,
                 isSelected && styles.filterChipActive,
-                isSelected && isVisionOS && styles.filterChipActive3D,
               ]}
               onPress={() => setSelectedCategory(prev => prev === categoryId ? null : categoryId)}
               accessibilityRole="button"
@@ -404,9 +396,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           style={[
             styles.filterChip,
             { backgroundColor: colors.inputBackground },
-            isVisionOS && styles.filterChip3D,
             !selectedArea && styles.filterChipActive,
-            !selectedArea && isVisionOS && styles.filterChipActive3D,
           ]}
           onPress={() => setSelectedArea(null)}
           accessibilityRole="button"
@@ -426,9 +416,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
               style={[
                 styles.filterChip,
                 { backgroundColor: colors.inputBackground },
-                isVisionOS && styles.filterChip3D,
                 isSelected && styles.filterChipActive,
-                isSelected && isVisionOS && styles.filterChipActive3D,
               ]}
               onPress={() => setSelectedArea(prev => prev === county.id ? null : county.id)}
               accessibilityRole="button"
@@ -453,9 +441,7 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
           style={[
             styles.filterChip,
             { backgroundColor: colors.inputBackground },
-            isVisionOS && styles.filterChip3D,
             selectedArea === 'none' && styles.filterChipActive,
-            selectedArea === 'none' && isVisionOS && styles.filterChipActive3D,
           ]}
           onPress={() => setSelectedArea(prev => prev === 'none' ? null : 'none')}
           accessibilityRole="button"
@@ -621,46 +607,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     marginRight: 8,
   },
-  filterChip3D: {
-    // visionOS: Larger touch target + elevated pill with glass-like depth
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 24,
-    marginRight: 12,
-    // Strong floating shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 10,
-    // Thick beveled glass border
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    borderTopColor: 'rgba(255, 255, 255, 0.7)',
-    borderLeftColor: 'rgba(255, 255, 255, 0.5)',
-    borderRightColor: 'rgba(0, 0, 0, 0.1)',
-    borderBottomColor: 'rgba(0, 0, 0, 0.15)',
-    // Frosted glass background
-    backgroundColor: 'rgba(243, 244, 246, 0.9)',
-  },
   filterChipActive: {
     backgroundColor: '#2563eb',
-  },
-  filterChipActive3D: {
-    // visionOS: Active state with stronger depth and glow
-    backgroundColor: 'rgba(37, 99, 235, 0.95)',
-    shadowColor: '#1d4ed8',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 12,
-    borderTopColor: 'rgba(255, 255, 255, 0.5)',
-    borderLeftColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomColor: 'rgba(0, 0, 0, 0.25)',
-  },
-  filterText3D: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   filterIcon: {
     fontSize: 16,
