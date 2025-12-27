@@ -1,6 +1,6 @@
 {
   "name": "bayareadiscounts-ios",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "index.ts",
   "scripts": {
     "start": "expo start --ios",
@@ -20,7 +20,6 @@
     "@react-navigation/bottom-tabs": "^7.9.0",
     "@react-navigation/native": "^7.1.26",
     "@react-navigation/native-stack": "^7.9.0",
-    "@sentry/react": "^10.32.1",
     "expo": "^54.0.30",
     "expo-glass-effect": "~0.1.8",
     "expo-haptics": "~15.0.8",
