@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +19,10 @@ import * as Haptics from 'expo-haptics';
 import APIService from '../services/api';
 import appConfig from '../../app.json';
 import { useTheme } from '../context/ThemeContext';
+import {
+  loadCrashReportingPreference,
+  setCrashReportingEnabled,
+} from '../utils/crashReporting';
 import type { SettingsStackParamList } from '../navigation/AppNavigator';
 
 const version = appConfig.expo.version;
@@ -40,11 +45,32 @@ export default function SettingsScreen() {
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
   const [metadata, setMetadata] = useState<any>(null);
   const [refreshingData, setRefreshingData] = useState<boolean>(false);
+  const [crashReportingEnabled, setCrashReporting] = useState<boolean>(true);
 
   useEffect(() => {
     loadMetadata();
     calculateCacheSize();
+    loadCrashReportingSetting();
   }, []);
+
+  const loadCrashReportingSetting = async () => {
+    const enabled = await loadCrashReportingPreference();
+    setCrashReporting(enabled);
+  };
+
+  const handleCrashReportingToggle = async (value: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCrashReporting(value);
+    await setCrashReportingEnabled(value);
+
+    if (!value) {
+      Alert.alert(
+        'Crash Reporting Disabled',
+        'Crash reporting has been disabled. This change will take full effect the next time you restart the app.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
 
   const handleThemeChange = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -463,6 +489,21 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Legal & Privacy</Text>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <View style={styles.row}>
+              <View style={styles.rowTextContainer}>
+                <Text style={[styles.label, { color: colors.text }]}>Crash Reporting</Text>
+                <Text style={[styles.sublabel, { color: colors.textSecondary }]}>
+                  Help improve the app by sending anonymous crash reports
+                </Text>
+              </View>
+              <Switch
+                value={crashReportingEnabled}
+                onValueChange={handleCrashReportingToggle}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#ffffff"
+              />
+            </View>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <TouchableOpacity
               style={styles.rowButton}
               onPress={handleShowDisclaimer}
