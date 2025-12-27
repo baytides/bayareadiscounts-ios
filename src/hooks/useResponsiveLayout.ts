@@ -5,6 +5,16 @@
 
 import { useWindowDimensions, Platform, ViewStyle } from 'react-native';
 
+export interface FontSizes {
+  xs: number;
+  sm: number;
+  base: number;
+  lg: number;
+  xl: number;
+  xxl: number;
+  xxxl: number;
+}
+
 export interface ResponsiveLayout {
   isTablet: boolean;
   isLandscape: boolean;
@@ -14,6 +24,7 @@ export interface ResponsiveLayout {
   screenWidth: number;
   screenHeight: number;
   cardElevationStyle: ViewStyle;
+  fontSize: FontSizes;
 }
 
 const TABLET_BREAKPOINT = 768;
@@ -71,6 +82,27 @@ export function useResponsiveLayout(): ResponsiveLayout {
         elevation: 3,
       };
 
+  // Responsive font sizes - larger for tablets/visionOS
+  const fontSize: FontSizes = isTablet
+    ? {
+        xs: 12,
+        sm: 14,
+        base: 16,
+        lg: 18,
+        xl: 22,
+        xxl: 28,
+        xxxl: 34,
+      }
+    : {
+        xs: 10,
+        sm: 12,
+        base: 14,
+        lg: 16,
+        xl: 18,
+        xxl: 24,
+        xxxl: 30,
+      };
+
   return {
     isTablet,
     isLandscape,
@@ -80,6 +112,7 @@ export function useResponsiveLayout(): ResponsiveLayout {
     screenWidth: width,
     screenHeight: height,
     cardElevationStyle,
+    fontSize,
   };
 }
 

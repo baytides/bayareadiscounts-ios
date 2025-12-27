@@ -223,26 +223,32 @@ export default function BrowseScreen({ navigation }: BrowseScreenProps) {
   }, [programs, selectedCategory, selectedArea, selectedEligibility, sortBy, showSavedOnly, favorites]);
 
   const handleToggleFavorite = useCallback(async (programId: string) => {
+    // Capture the current state BEFORE optimistic update
+    const wasCurrentlyFavorite = favorites.includes(programId);
+
     // Optimistic update with safe functional state updates
     setFavorites(prev => {
-      const next = prev.includes(programId)
+      return wasCurrentlyFavorite
         ? prev.filter(id => id !== programId)
         : [...prev, programId];
-      return next;
     });
 
     try {
-      const currentlyFav = favorites.includes(programId);
-      if (currentlyFav) {
+      if (wasCurrentlyFavorite) {
         await APIService.removeFavorite(programId);
       } else {
         await APIService.addFavorite(programId);
       }
     } catch (err) {
-      // Revert on failure
+      // Revert on failure - restore to original state
       setFavorites(prev => {
-        const shouldBeFav = prev.includes(programId);
-        return shouldBeFav ? prev.filter(id => id !== programId) : [...prev, programId];
+        if (wasCurrentlyFavorite) {
+          // Was a favorite, we tried to remove, failed - add it back
+          return prev.includes(programId) ? prev : [...prev, programId];
+        } else {
+          // Was not a favorite, we tried to add, failed - remove it
+          return prev.filter(id => id !== programId);
+        }
       });
       console.error('Toggle favorite error:', err);
     }

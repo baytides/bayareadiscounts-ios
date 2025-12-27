@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, Text } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { FavoritesStackParamList } from '../navigation/AppNavigator';
+import { BrowseStackParamList } from '../navigation/AppNavigator';
 import { Program } from '../types';
 import APIService from '../services/api';
 import ProgramCard from '../components/ProgramCard';
@@ -15,7 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 type FavoritesScreenProps = {
-  navigation: NativeStackNavigationProp<FavoritesStackParamList, 'FavoritesList'>;
+  navigation: NativeStackNavigationProp<BrowseStackParamList, 'BrowseList'>;
 };
 
 export default function FavoritesScreen({ navigation }: FavoritesScreenProps) {
